@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Scanner;
 
 /**
  * The Quiz class allows the user to answer questions from a predefined question bank. The questions are displayed in a random order and a score is calculated at the end for how accurately the user answered the questions.
@@ -44,16 +46,61 @@ public class Quiz
         quiz.run();
     }
 
+    /**
+     * Runs the quiz by asking each question and checking whether the user's response is correct. The order of the questions will be shuffled every time the quiz is run.
+     */
     public void run()
     {
+        // Get the questions in a Question[]
         ArrayList<String[]> csv = fileHandler(resourceName);
 
-        System.out.println("=======================\n" +
-                " \"Quiz Me\" Test Review \n" +
-                "=======================\n" +
-                "\n");
+        // Shuffle the order of questions
+        // Done here because Collections.shuffle only works on ArrayLists
+        Collections.shuffle(csv);
 
+        Question[] questions = makeQuestions(csv);
 
+        // Store number of correct answers
+        int numCorrect = 0;
+
+        // Initialize a scanner
+        Scanner input = new Scanner(System.in);
+
+        System.out.println("""
+                =======================
+                 "Quiz Me" Test Review\s
+                =======================
+
+                """);
+
+        for (int i = 0; i < questions.length; i++)
+        {
+            Question question = questions[i];
+            System.out.println("Question #" + (i + 1) + "\n------------");
+
+            // Print the question itself
+            System.out.println(question.getPrompt());
+
+            // Get the user's answer
+            String userAnswer = input.nextLine();
+
+            // Check if the user was correct
+            boolean correct = question.checkAnswer(userAnswer);
+
+            if (correct)
+            {
+                System.out.println("Correct!\n");
+                numCorrect++;
+            }
+            else
+            {
+                System.out.println("Sorry, the correct answer is " + question.getAnswer() + "\n");
+            }
+        }
+
+        // Display the user's score at the end
+        int percent = (int) (((double) numCorrect / questions.length) * 100);
+        System.out.println("Your score: " + percent + "%");
     }
 
     /**
@@ -96,37 +143,59 @@ public class Quiz
     /**
      * Parses through the csv in the form of an ArrayList and constructs objects that represent each question
      * @param csv The ArrayList of String[]'s that contain each question
-     * @return The ArrayList storing each question in the form of the corresponding question object
+     * @return The array storing each question in the form of the corresponding question object
      */
-    private static ArrayList<Question> makeQuestions(ArrayList<String[]> csv)
+    private static Question[] makeQuestions(ArrayList<String[]> csv)
     {
-        ArrayList<Question> questions = new ArrayList<>(csv.size());
+        Question[] questions = new Question[csv.size()];
 
         // Loop through all questions in text format
-        for (String[] question : csv)
+        for (int i = 0; i < csv.size(); i++)
         {
+            String[] question = csv.get(i);
+
             // Determine the type of the question
-            if (question[0].equals(FREE_RESPONSE_QUESTION_TYPE))
+            switch (question[0])
             {
-                // Construct a free response question
-                Question frq = new Question(question[1], question[2]);
+                // IntelliJ suggested I use a switch instead, so I did...
+                // Maybe Cole is behind that to make my code "way more efficient"...
 
-                // Add it to the questions ArrayList
-                questions.add(frq);
-            }
-            else if (question[0].equals(MULTIPLE_CHOICE_QUESTION_TYPE))
-            {
-                // Get the choices for the mcq in a String[]
-                String[] options = new String[question.length - 3];
+                case FREE_RESPONSE_QUESTION_TYPE ->
+                {
+                    // Construct a free response question
+                    Question frq = new Question(question[1], question[2]);
 
-                System.arraycopy(question, 3, options, 0, question.length - 3);
+                    // Add it to the questions ArrayList
+                    questions[i] = frq;
+                }
+                case MULTIPLE_CHOICE_QUESTION_TYPE ->
+                {
+                    // Get the choices for the mcq in a String[]
+                    String[] options = new String[question.length - 3];
 
-                // Construct a(n) mcq question and
-                MultipleChoiceQuestion mcq = new MultipleChoiceQuestion(question[1], question[2], options);
+                    System.arraycopy(question, 3, options, 0, question.length - 3);
 
-                // Add it to the questions ArrayList
-                questions.add(mcq);
+                    // Construct a(n) mcq question and
+                    MultipleChoiceQuestion mcq = new MultipleChoiceQuestion(question[1], question[2], options);
+
+                    // Add it to the questions ArrayList
+                    questions[i] = mcq;
+                }
+                case TRUE_FALSE_QUESTION_TYPE ->
+                {
+                    // Convert the string true/false to a boolean true/false
+                    boolean answer = question[2].equalsIgnoreCase("true");
+
+                    // Construct the true/false question
+                    TrueFalseQuestion tfq = new TrueFalseQuestion(question[1], answer);
+
+                    // Add it to the array
+                    questions[i] = tfq;
+                }
             }
         }
+
+        // Return the now completed array
+        return questions;
     }
 }

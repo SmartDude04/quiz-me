@@ -24,10 +24,7 @@ public class Question
      */
     public boolean checkAnswer(String answer)
     {
-        String formattedAnswer = answer.toLowerCase();
-        String formattedCorrect = answer.toLowerCase();
-
-        return formattedAnswer.equals(formattedCorrect);
+        return this.answer.equalsIgnoreCase(answer);
     }
 
     /**
