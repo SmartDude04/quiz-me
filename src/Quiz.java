@@ -101,6 +101,8 @@ public class Quiz
         // Display the user's score at the end
         int percent = (int) (((double) numCorrect / questions.length) * 100);
         System.out.println("Your score: " + percent + "%");
+
+        input.close();
     }
 
     /**
